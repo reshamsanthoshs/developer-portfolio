@@ -81,10 +81,109 @@ Run the application:
 python ReActAgent.py
 ```
 
-## Learning Goals
 
-* Build AI agents using LangChain
-* Understand tool calling and agent workflows
-* Explore LangGraph and multi-step reasoning
-* Experiment with local LLMs using Ollama
-* Build production-ready AI applications
+
+
+## Building Conversational History
+
+**Step 1: Understand the Problem**
+
+    Without history:
+
+    User: What is the area of a rectangle with sides 5 and 6?
+    AI: 30
+
+    User: What about one with sides 4 and 3?
+    AI: What does "one" refer to?
+
+    The second request fails because the model only sees:
+
+    [
+        {"role": "user", "content": "What about one with sides 4 and 3?"}
+    ]
+
+    It has no idea what happened before.
+
+
+**Step 2: Store Previous Messages**
+
+    Create a list:
+
+    conversation = []
+
+    Every message exchanged gets added to it.
+
+    Example:
+
+    conversation = [
+        HumanMessage(content="What is the area of a rectangle with sides 5 and 6?")
+    ]
+
+**Step 3: Send History to the Agent**9
+
+    Instead of:
+
+    response = agent.invoke({
+        "messages": [
+            HumanMessage(content=query)
+        ]
+    })
+
+    send the entire conversation:
+
+    response = agent.invoke({
+        "messages": conversation
+    })
+
+    Now the model sees everything.
+
+**Step 4: Save the Agent Response**
+
+    After invocation:
+
+    response = agent.invoke({
+        "messages": conversation
+    })
+
+    LangChain returns:
+
+    response["messages"]
+
+    which contains:
+
+    HumanMessage(...)
+    AIMessage(...)
+    ToolMessage(...)
+    AIMessage(...)
+
+    Store it:
+
+    conversation = response["messages"]
+
+**Step 5: Add the Next User Question**
+    conversation.append(
+        HumanMessage(
+            content="What about one with sides 4 and 3?"
+        )
+    )
+
+    Now history becomes:
+
+    Human: What is area of 5 and 6?
+    AI: 30
+
+    Human: What about one with sides 4 and 3?
+    Step 6: Invoke Again
+    response = agent.invoke({
+        "messages": conversation
+    })
+
+    The model now understands:
+
+    "What about one"
+
+    means
+
+    "another rectangle"
+
+    because previous context exists.
